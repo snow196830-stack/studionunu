@@ -1,6 +1,6 @@
 # STUDIO NUNU — 3개 국어 공식 홈페이지
 
-- 라이브: https://snow196830-stack.github.io/studio-nunu/
+- 라이브: https://snow196830-stack.github.io/studionunu/
 
 스튜디오누누(STUDIO NUNU)의 다국어 원페이지 사이트입니다.
 일본어(기본) · 한국어 · 영어 3개 국어를 상단에서 즉시 전환할 수 있습니다.
@@ -28,7 +28,7 @@ cd studio-nunu && python3 -m http.server 8000
 배포는 폴더 전체를 그대로 올리면 됩니다(GitHub Pages / Netlify / Vercel / 카페24 등).
 배포 후 손볼 곳:
 
-- `index.html`의 `og:image`·`og:url` 은 라이브 배포 주소(`https://snow196830-stack.github.io/studio-nunu/`) 기준 절대 URL로 설정되어 있습니다.
+- `index.html`의 `og:image`·`og:url` 은 라이브 배포 주소(`https://snow196830-stack.github.io/studionunu/`) 기준 절대 URL로 설정되어 있습니다.
   도메인을 바꾸면 두 값을 새 주소로 바꿔 주세요.
 - 정식 도메인·파비콘·`sitemap.xml` 은 도메인 확정 후 추가.
 
