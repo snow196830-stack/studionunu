@@ -8,6 +8,7 @@
   "use strict";
 
   /* ---------- 1. 채널 링크 ---------- */
+  /* 기본값(폴백). data/content.json 이 로드되면 channels 값으로 덮어쓴다. */
   var URLS = {
     line: "https://line.me/R/ti/p/@362hsrxc",
     kakao: "https://pf.kakao.com/_DPDxib",
@@ -159,9 +160,12 @@
       resFine: "한국 고객은 카카오톡 채널, 일본 고객은 LINE이 가장 빠릅니다.",
       visitTitle: "오시는 길",
       vAddrLabel: "주소",
-      vAddr: "서울특별시 강남구 역삼동 804<br><span class=\"muted\">지하철 2호선 선릉역 5번 출구에서 도보 1분</span>",
+      vAddr: "서울특별시 강남구 역삼동 804",
+      vAddrNote: "지하철 2호선 선릉역 5번 출구에서 도보 1분",
       vHoursLabel: "영업시간",
       vHours: "예약 시 안내드립니다",
+      vParkingLabel: "주차",
+      vParking: "예약 시 안내드립니다",
       vPriceLabel: "가격",
       vPrice: "카카오톡·LINE 상담 시 안내드립니다",
       vTripLabel: "출장 시술",
@@ -297,9 +301,12 @@
       resFine: "LINE is the fastest route for guests from abroad. Korean guests can use the KakaoTalk channel.",
       visitTitle: "Visit",
       vAddrLabel: "Address",
-      vAddr: "804 Yeoksam-dong, Gangnam-gu, Seoul<br><span class=\"muted\">1 min walk from Exit 5, Seolleung Station (Line 2)</span>",
+      vAddr: "804 Yeoksam-dong, Gangnam-gu, Seoul",
+      vAddrNote: "1 min walk from Exit 5, Seolleung Station (Line 2)",
       vHoursLabel: "Hours",
       vHours: "Confirmed at booking",
+      vParkingLabel: "Parking",
+      vParking: "Confirmed at booking",
       vPriceLabel: "Pricing",
       vPrice: "Shared on LINE or KakaoTalk",
       vTripLabel: "Visits",
@@ -395,6 +402,10 @@
 
     /* 저장 */
     try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
+
+    /* data/content.json 값이 있으면 마지막에 덮어쓴다(원장님이 고친 문구가 우선) */
+    applyContentText(lang);
+    applyLinks();
   }
 
   function setMeta(attr, name, value) {
@@ -476,20 +487,23 @@
   });
 
   /* ---------- 7. 스크롤 리빌 ---------- */
-  var revealables = Array.prototype.slice.call(document.querySelectorAll(".reveal"));
+  var revealObserver = null;
   if ("IntersectionObserver" in window) {
-    var io = new IntersectionObserver(function (entries) {
+    revealObserver = new IntersectionObserver(function (entries) {
       entries.forEach(function (en) {
         if (en.isIntersecting) {
           en.target.classList.add("is-in");
-          io.unobserve(en.target);
+          revealObserver.unobserve(en.target);
         }
       });
     }, { rootMargin: "0px 0px -8% 0px", threshold: 0.06 });
-    revealables.forEach(function (el) { io.observe(el); });
-  } else {
-    revealables.forEach(function (el) { el.classList.add("is-in"); });
   }
+  function initReveal(scope) {
+    var list = Array.prototype.slice.call((scope || document).querySelectorAll(".reveal"));
+    if (revealObserver) list.forEach(function (el) { revealObserver.observe(el); });
+    else list.forEach(function (el) { el.classList.add("is-in"); });
+  }
+  initReveal();
 
   /* ---------- 7. 릴스 캐러셀 (자동 슬라이드) ---------- */
   function initReels() {
@@ -702,7 +716,280 @@
     setTimeout(playVisible, 600);
   }
 
-  /* ---------- 8. 시작 ---------- */
+  /* =========================================================
+     8. data/content.json — 원장님이 /admin/ 에서 고치는 부분
+        공지바 · 히어로 문구 · 시술 메뉴/가격 · 영업시간·주소·주차
+        · 예약 채널 링크 · 인스타 릴스 목록
+     - 로드 실패(오프라인·파일 없음·JSON 오류) 시 아래 기본값(HTML 원문)
+       그대로 동작한다. 화면이 깨지지 않도록 모든 처리는 CONTENT 존재 여부를 본다.
+     ========================================================= */
+  var CONTENT = null;
+  var CONTENT_KEY = "nunu-content-v";
+  var IG_PATH = "M12 2.2c3.2 0 3.6 0 4.9.1 1.2.1 1.8.3 2.2.4.6.2 1 .5 1.4.9.4.4.7.8.9 1.4.2.4.4 1 .4 2.2.1 1.3.1 1.7.1 4.9s0 3.6-.1 4.9c-.1 1.2-.3 1.8-.4 2.2-.2.6-.5 1-.9 1.4-.4.4-.8.7-1.4.9-.4.2-1 .4-2.2.4-1.3.1-1.7.1-4.9.1s-3.6 0-4.9-.1c-1.2-.1-1.8-.3-2.2-.4-.6-.2-1-.5-1.4-.9-.4-.4-.7-.8-.9-1.4-.2-.4-.4-1-.4-2.2C2.2 15.6 2.2 15.2 2.2 12s0-3.6.1-4.9c.1-1.2.3-1.8.4-2.2.2-.6.5-1 .9-1.4.4-.4.8-.7 1.4-.9.4-.2 1-.4 2.2-.4C8.4 2.2 8.8 2.2 12 2.2Zm0 5.3a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9Zm0 7.4a2.9 2.9 0 1 1 0-5.8 2.9 2.9 0 0 1 0 5.8Zm5.7-7.6a1.05 1.05 0 1 1-2.1 0 1.05 1.05 0 0 1 2.1 0Z";
+  var CARD_CTA_JP = "LINEで相談する";
+  var REEL_CTA = { jp: "リールを見る", kr: "릴스 보기", en: "Watch the reel" };
+
+  /* {jp,kr,en} 객체에서 언어 값 추출. 값이 없으면 일본어, 그것도 없으면 빈 문자열 */
+  function pick(obj, lang) {
+    if (obj === null || obj === undefined) return "";
+    if (typeof obj === "string" || typeof obj === "number") return String(obj);
+    if (obj[lang] !== undefined && obj[lang] !== null) return String(obj[lang]);
+    if (obj.jp !== undefined && obj.jp !== null) return String(obj.jp);
+    return "";
+  }
+
+  function getPath(path) {
+    var parts = String(path).split(".");
+    var cur = CONTENT;
+    for (var i = 0; i < parts.length; i++) {
+      if (cur === null || cur === undefined) return null;
+      cur = cur[parts[i]];
+    }
+    return cur;
+  }
+
+  /* 정적 문구: index.html 의 [data-content] 요소를 content.json 값으로 교체 */
+  function applyContentText(lang) {
+    if (!CONTENT) return;
+    document.querySelectorAll("[data-content]").forEach(function (el) {
+      var path = el.getAttribute("data-content");
+      if (path.indexOf("menu.returnPink.price") === 0) return; /* 아래에서 hidden 처리와 함께 다룸 */
+      var val = pick(getPath(path), lang);
+      if (val !== "") el.innerHTML = val;
+    });
+    paintMenus(lang);
+    paintReels(lang);
+  }
+
+  /* 예약 채널 · 카카오맵 링크 */
+  function applyLinks() {
+    if (!CONTENT) return;
+    var ch = CONTENT.channels || {};
+    var mapUrl = (CONTENT.visit && CONTENT.visit.mapUrl) || "";
+    document.querySelectorAll("[data-link]").forEach(function (a) {
+      var k = a.getAttribute("data-link");
+      var url = k === "map" ? mapUrl : ch[k];
+      if (url && a.getAttribute("href") !== url) a.setAttribute("href", url);
+    });
+  }
+
+  /* ---------- 8-1. 시술 메뉴 카드 ---------- */
+  function buildMenus() {
+    var wrap = document.getElementById("menuCards");
+    if (!wrap || !CONTENT.menu || !Array.isArray(CONTENT.menu.items)) return;
+    if (!CONTENT.menu.items.length) return; /* 빈 배열이면 기본 카드 유지 */
+
+    wrap.innerHTML = "";
+    CONTENT.menu.items.forEach(function (item, i) {
+      var card = document.createElement("article");
+      card.className = "card reveal";
+      card.setAttribute("data-menu-item", String(i || 0));
+
+      var media = document.createElement("div");
+      media.className = "card__media";
+      var img = document.createElement("img");
+      img.src = item.image || "assets/post-01.jpg";
+      img.alt = "";
+      img.loading = "lazy";
+      media.appendChild(img);
+
+      var body = document.createElement("div");
+      body.className = "card__body";
+      var en = document.createElement("p");
+      en.className = "card__en";
+      en.textContent = item.label || "";
+      var name = document.createElement("h3");
+      name.className = "card__jp";
+      var price = document.createElement("p");
+      price.className = "card__price";
+      price.hidden = true;
+      var desc = document.createElement("p");
+      desc.className = "card__desc";
+      var cta = document.createElement("a");
+      cta.className = "card__link";
+      cta.setAttribute("data-cta", "primary");
+      cta.setAttribute("data-label", "cardCta");
+      cta.setAttribute("target", "_blank");
+      cta.setAttribute("rel", "noopener");
+      cta.href = URLS.line;
+
+      body.appendChild(en);
+      body.appendChild(name);
+      body.appendChild(price);
+      body.appendChild(desc);
+      body.appendChild(cta);
+      card.appendChild(media);
+      card.appendChild(body);
+      wrap.appendChild(card);
+    });
+  }
+
+  function paintMenus(lang) {
+    if (!CONTENT || !CONTENT.menu) return;
+    var wrap = document.getElementById("menuCards");
+    if (wrap) {
+      Array.prototype.forEach.call(wrap.querySelectorAll("[data-menu-item]"), function (card, i) {
+        var item = CONTENT.menu.items[i];
+        if (!item) return;
+        var en = card.querySelector(".card__en");
+        if (en) en.textContent = item.label || "";
+        var name = card.querySelector(".card__jp");
+        if (name) name.innerHTML = pick(item.name, lang);
+        var desc = card.querySelector(".card__desc");
+        if (desc) desc.innerHTML = pick(item.desc, lang);
+        var priceEl = card.querySelector(".card__price");
+        var price = pick(item.price, lang).trim();
+        if (priceEl) { priceEl.innerHTML = price; priceEl.hidden = !price; }
+        var img = card.querySelector(".card__media img");
+        if (img) {
+          if (item.image && img.getAttribute("src") !== item.image) img.setAttribute("src", item.image);
+          img.setAttribute("alt", pick(item.alt, lang) || pick(item.name, lang));
+        }
+        var cta = card.querySelector(".card__link");
+        if (cta) cta.textContent = lang === "jp" ? CARD_CTA_JP : ((I18N[lang] && I18N[lang].cardCta) || CARD_CTA_JP);
+      });
+    }
+
+    var rp = CONTENT.menu.returnPink;
+    var rpPrice = document.getElementById("rpPrice");
+    if (rpPrice) {
+      var p = rp ? pick(rp.price, lang).trim() : "";
+      rpPrice.innerHTML = p;
+      rpPrice.hidden = !p;
+    }
+  }
+
+  /* ---------- 8-2. 릴스 캐러셀 ---------- */
+  function buildReels() {
+    var track = document.getElementById("reelTrack");
+    if (!track || !Array.isArray(CONTENT.reels) || !CONTENT.reels.length) return;
+
+    track.innerHTML = "";
+    CONTENT.reels.forEach(function (r, i) {
+      var li = document.createElement("li");
+      li.className = "reels__slide";
+      li.setAttribute("role", "listitem");
+
+      var a = document.createElement("a");
+      a.className = "reel";
+      a.href = r.url || "#";
+      a.target = "_blank";
+      a.rel = "noopener";
+
+      var media = document.createElement("span");
+      media.className = "reel__media";
+      if (r.video) {
+        var v = document.createElement("video");
+        v.className = "reel__video";
+        v.src = r.video;
+        if (r.poster) v.poster = r.poster;
+        v.width = 720; v.height = 1280;
+        v.muted = true; v.loop = true; v.playsInline = true; v.autoplay = true;
+        v.preload = "metadata";
+        v.setAttribute("muted", ""); v.setAttribute("playsinline", ""); v.setAttribute("aria-hidden", "true");
+        v.tabIndex = -1;
+        media.appendChild(v);
+      } else if (r.poster) {
+        var im = document.createElement("img");
+        im.className = "reel__poster";
+        im.src = r.poster;
+        im.alt = "";
+        im.loading = "lazy";
+        media.appendChild(im);
+      } else {
+        var ph = document.createElement("span");
+        ph.className = "reel__placeholder";
+        ph.textContent = "STUDIO NUNU";
+        media.appendChild(ph);
+      }
+
+      var no = document.createElement("span");
+      no.className = "reel__no";
+      no.textContent = "REEL " + (i + 1 < 10 ? "0" : "") + (i + 1);
+      media.appendChild(no);
+
+      var ig = document.createElement("span");
+      ig.className = "reel__ig";
+      ig.setAttribute("aria-hidden", "true");
+      ig.innerHTML = '<svg viewBox="0 0 24 24"><path d="' + IG_PATH + '"/></svg>';
+      media.appendChild(ig);
+
+      var meta = document.createElement("span");
+      meta.className = "reel__meta";
+      var t = document.createElement("span");
+      t.className = "reel__t";
+      var d = document.createElement("span");
+      d.className = "reel__d";
+      var c = document.createElement("span");
+      c.className = "reel__cta";
+      meta.appendChild(t); meta.appendChild(d); meta.appendChild(c);
+
+      a.appendChild(media);
+      a.appendChild(meta);
+      li.appendChild(a);
+      track.appendChild(li);
+    });
+  }
+
+  function paintReels(lang) {
+    if (!CONTENT || !Array.isArray(CONTENT.reels)) return;
+    var track = document.getElementById("reelTrack");
+    if (!track) return;
+    Array.prototype.forEach.call(track.children, function (li, i) {
+      var r = CONTENT.reels[i];
+      if (!r) return;
+      var t = r.title ? pick(r.title, lang) : "";
+      var d = r.desc ? pick(r.desc, lang) : "";
+      var elT = li.querySelector(".reel__t");
+      var elD = li.querySelector(".reel__d");
+      var elC = li.querySelector(".reel__cta");
+      if (elT) elT.innerHTML = t;
+      if (elD) elD.innerHTML = d;
+      if (elC) elC.textContent = REEL_CTA[lang] || REEL_CTA.jp;
+      var a = li.querySelector("a.reel");
+      if (a) {
+        a.setAttribute("aria-label", (t || "Instagram") + " — " + (REEL_CTA[lang] || REEL_CTA.jp));
+        if (r.url) a.setAttribute("href", r.url);
+      }
+    });
+  }
+
+  /* ---------- 8-3. 로드 ---------- */
+  function loadContent() {
+    if (window.location.protocol === "file:") return Promise.resolve(null); /* 로컬 파일 직접 열기: 기본값 사용 */
+    var bust = "";
+    try {
+      var v = localStorage.getItem(CONTENT_KEY);
+      if (v) bust = "?v=" + encodeURIComponent(v);
+    } catch (e) {}
+    return fetch("data/content.json" + bust, { cache: "no-store" })
+      .then(function (res) {
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return res.json();
+      })
+      .then(function (data) {
+        if (!data || typeof data !== "object") throw new Error("invalid json");
+        CONTENT = data;
+        if (data.channels) {
+          if (data.channels.line) URLS.line = data.channels.line;
+          if (data.channels.kakao) URLS.kakao = data.channels.kakao;
+          if (data.channels.instagram) URLS.instagram = data.channels.instagram;
+        }
+        buildMenus();
+        buildReels();
+        return CONTENT;
+      })
+      .catch(function () {
+        CONTENT = null; /* 폴백: index.html·app.js 내장 기본값 */
+        return null;
+      });
+  }
+
+  /* ---------- 9. 시작 ---------- */
   applyLanguage(initialLang());
-  initReels();
+  loadContent().then(function () {
+    if (CONTENT) applyLanguage(current); /* 로드된 문구·메뉴를 현재 언어로 다시 그림 */
+    initReveal(document.getElementById("signature") || document);
+    initReels();
+  });
 })();

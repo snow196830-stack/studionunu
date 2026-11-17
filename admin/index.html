@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>STUDIO NUNU｜홈페이지 관리</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23241d1c'/%3E%3Ctext x='32' y='43' font-family='Georgia,serif' font-size='28' fill='%23f7e9e6' text-anchor='middle'%3EN%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar__brand">
+    <span class="topbar__logo">STUDIO NUNU</span>
+    <span class="topbar__sub">홈페이지 관리</span>
+  </div>
+  <div class="topbar__right">
+    <span class="dot" id="connDot" aria-hidden="true"></span>
+    <span class="topbar__status" id="connText">연결 확인 중…</span>
+    <a class="btn btn--ghost btn--sm" href="../" target="_blank" rel="noopener">홈페이지 보기 ↗</a>
+    <button type="button" class="btn btn--ghost btn--sm" id="lockBtn" hidden>잠금</button>
+  </div>
+</header>
+
+<main class="page">
+
+  <!-- ============ 1. 로그인 게이트 ============ -->
+  <section class="gate" id="gate" hidden>
+    <div class="gate__card">
+      <p class="eyebrow">ADMIN</p>
+      <h1 class="gate__title">원장님 로그인</h1>
+      <p class="gate__lead">
+        한 번만 GitHub 토큰을 넣으면, 그다음부터는 <b>저장</b> 버튼만 누르면 됩니다.
+        토큰은 <b>이 브라우저에만</b> 저장되고 홈페이지 코드에는 들어가지 않습니다.
+      </p>
+
+      <ol class="steps">
+        <li>
+          <span class="steps__n">1</span>
+          <div>
+            <p class="steps__t">토큰 만들기 페이지 열기</p>
+            <p class="steps__d"><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens/new ↗</a></p>
+          </div>
+        </li>
+        <li>
+          <span class="steps__n">2</span>
+          <div>
+            <p class="steps__t">아래처럼 설정</p>
+            <p class="steps__d">
+              Token name: <code>studionunu-admin</code><br>
+              Expiration: <code>1 year</code> (또는 원하는 기간)<br>
+              Repository access: <code>Only select repositories</code> → <code>snow196830-stack/studionunu</code><br>
+              Permissions → Repository permissions → <b>Contents: Read and write</b>
+            </p>
+          </div>
+        </li>
+        <li>
+          <span class="steps__n">3</span>
+          <div>
+            <p class="steps__t">Generate token → 복사해서 아래에 붙여넣기</p>
+            <p class="steps__d"><code>github_pat_…</code> 로 시작하는 긴 문자열입니다. 한 번만 보이니 그때 복사하세요.</p>
+          </div>
+        </li>
+      </ol>
+
+      <form class="gate__form" id="gateForm" autocomplete="off">
+        <label class="field__label" for="tokenInput">GitHub 토큰</label>
+        <input class="input" id="tokenInput" type="password" spellcheck="false" autocomplete="off"
+               placeholder="github_pat_..." aria-describedby="tokenHint">
+        <p class="hint" id="tokenHint">붙여넣은 토큰은 api.github.com 에만 전송됩니다.</p>
+
+        <div class="gate__opt">
+          <label class="check">
+            <input type="checkbox" id="rememberToken" checked>
+            <span>이 브라우저에 저장 (다음부터 자동 로그인)</span>
+          </label>
+        </div>
+
+        <details class="gate__pin">
+          <summary>PIN 잠금으로 한 번 더 보호하기 (선택)</summary>
+          <div class="gate__pin-body">
+            <label class="check">
+              <input type="checkbox" id="usePin">
+              <span>PIN 잠금 사용 — 저장할 때 PIN을 입력해야 열립니다</span>
+            </label>
+            <input class="input input--sm" id="pinInput" type="password" inputmode="numeric"
+                   placeholder="PIN 4자리 이상" autocomplete="new-password" disabled>
+          </div>
+        </details>
+
+        <p class="alert" id="gateAlert" hidden></p>
+        <button type="submit" class="btn btn--primary btn--block" id="gateSubmit">연결하기</button>
+      </form>
+
+      <p class="gate__foot">
+        토큰 없이도 <b>content.json 내려받기 · 올리기</b>로 백업할 수 있습니다.
+        <button type="button" class="linklike" id="gateSkip">토큰 없이 편집 화면 열기</button>
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ 2. PIN 잠금 해제 ============ -->
+  <section class="gate" id="pinGate" hidden>
+    <div class="gate__card gate__card--sm">
+      <p class="eyebrow">LOCKED</p>
+      <h1 class="gate__title">PIN 입력</h1>
+      <p class="gate__lead">이 브라우저에 저장된 토큰을 PIN으로 열어야 저장할 수 있습니다.</p>
+      <form class="gate__form" id="pinForm" autocomplete="off">
+        <input class="input" id="pinUnlock" type="password" inputmode="numeric" placeholder="PIN" autofocus>
+        <p class="alert" id="pinAlert" hidden></p>
+        <button type="submit" class="btn btn--primary btn--block">열기</button>
+      </form>
+      <p class="gate__foot"><button type="button" class="linklike" id="pinReset">PIN을 잊었습니다 — 토큰 다시 입력</button></p>
+    </div>
+  </section>
+
+  <!-- ============ 3. 편집 화면 ============ -->
+  <section id="editor" hidden>
+
+    <div class="toolbar">
+      <div class="langbar" role="group" aria-label="편집 언어">
+        <span class="langbar__label">편집 언어</span>
+        <button type="button" class="langbtn" data-lang="kr" aria-pressed="true">한국어</button>
+        <button type="button" class="langbtn" data-lang="jp" aria-pressed="false">日本語</button>
+        <button type="button" class="langbtn" data-lang="en" aria-pressed="false">English</button>
+      </div>
+      <p class="toolbar__meta" id="metaInfo"></p>
+    </div>
+
+    <p class="notice" id="topNotice">
+      홈페이지의 일본어·한국어·영어 문구를 모두 같은 화면에서 고칩니다.
+      언어를 바꿔 가며 각 언어 문구를 채워 주세요. 비워 두면 그 언어에서는 이전 문구가 그대로 남습니다.
+    </p>
+
+    <section class="card" aria-labelledby="h-basic">
+      <header class="card__head">
+        <h2 id="h-basic">1. 기본 · 공지</h2>
+        <p class="card__lead">맨 위 공지바와 첫 화면(히어로) 문구입니다.</p>
+      </header>
+      <div class="fields" id="fieldsBasic"></div>
+    </section>
+
+    <section class="card" aria-labelledby="h-channels">
+      <header class="card__head">
+        <h2 id="h-channels">2. 예약 링크</h2>
+        <p class="card__lead">홈페이지의 모든 예약 버튼이 이 주소로 연결됩니다.</p>
+      </header>
+      <div class="fields" id="fieldsChannels"></div>
+    </section>
+
+    <section class="card" aria-labelledby="h-visit">
+      <header class="card__head">
+        <h2 id="h-visit">3. 영업시간 · 주소 · 주차</h2>
+        <p class="card__lead">‘오시는 길’ 영역에 표시됩니다.</p>
+      </header>
+      <div class="fields" id="fieldsVisit"></div>
+    </section>
+
+    <section class="card" aria-labelledby="h-menu">
+      <header class="card__head">
+        <h2 id="h-menu">4. 시술 메뉴 &amp; 가격</h2>
+        <p class="card__lead">메뉴를 추가·삭제하고 이름·설명·가격을 고칩니다. 가격을 비우면 홈페이지에 가격 줄이 나오지 않습니다.</p>
+      </header>
+      <div class="fields" id="fieldsMenuHead"></div>
+      <div class="list" id="menuList"></div>
+      <div id="returnPinkCard" class="list" style="margin-top:12px"></div>
+      <button type="button" class="btn btn--add" id="addMenu">+ 메뉴 추가</button>
+    </section>
+
+    <section class="card" aria-labelledby="h-reel">
+      <header class="card__head">
+        <h2 id="h-reel">5. 인스타 릴스</h2>
+        <p class="card__lead">쇼케이스 캐러셀에 순서대로 나옵니다. 위아래 화살표로 순서를 바꿉니다.</p>
+      </header>
+      <div class="list" id="reelList"></div>
+      <button type="button" class="btn btn--add" id="addReel">+ 릴스 추가</button>
+      <p class="hint">
+        새 릴스의 <b>영상·썸네일</b>은 파일을 저장소 <code>assets/</code> 폴더에 올려야 재생됩니다.
+        영상 없이 릴스 주소만 넣으면 썸네일 카드로 표시됩니다.
+      </p>
+    </section>
+
+    <section class="card" aria-labelledby="h-backup">
+      <header class="card__head">
+        <h2 id="h-backup">6. 백업 · 복원</h2>
+        <p class="card__lead">지금 화면의 내용을 파일로 보관하거나, 보관한 파일을 다시 불러옵니다. (저장은 별도)</p>
+      </header>
+      <div class="backup">
+        <button type="button" class="btn btn--ghost" id="downloadBtn">content.json 내려받기</button>
+        <label class="btn btn--ghost" for="uploadInput">content.json 올리기</label>
+        <input type="file" id="uploadInput" accept="application/json,.json" hidden>
+        <button type="button" class="btn btn--ghost" id="reloadBtn">GitHub 최신 내용 다시 불러오기</button>
+      </div>
+      <p class="hint">내려받은 파일은 그대로 보관용입니다. 되돌리려면 올리기로 불러온 뒤 <b>저장 및 홈페이지 반영</b>을 누르세요.</p>
+    </section>
+
+    <div class="bottomspace"></div>
+  </section>
+</main>
+
+<!-- ============ 저장 바 ============ -->
+<div class="savebar" id="savebar" hidden>
+  <div class="savebar__inner">
+    <p class="savebar__status" id="saveStatus" role="status" aria-live="polite">변경사항 없음</p>
+    <div class="savebar__actions">
+      <button type="button" class="btn btn--ghost" id="revertBtn">되돌리기</button>
+      <button type="button" class="btn btn--primary" id="saveBtn">저장 및 홈페이지 반영</button>
+    </div>
+  </div>
+</div>
+
+<script src="admin.js"></script>
+</body>
+</html>

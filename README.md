@@ -1,6 +1,7 @@
 # STUDIO NUNU — 3개 국어 공식 홈페이지
 
 - 라이브: https://snow196830-stack.github.io/studionunu/
+- **관리자 페이지: https://snow196830-stack.github.io/studionunu/admin/** (원장님이 직접 문구·가격을 고치는 곳. 검색 노출 안 됨)
 
 스튜디오누누(STUDIO NUNU)의 다국어 원페이지 사이트입니다.
 일본어(기본) · 한국어 · 영어 3개 국어를 상단에서 즉시 전환할 수 있습니다.
@@ -10,13 +11,65 @@ studio-nunu/
 ├── index.html            # 마크업(일본어 원문이 기본값)
 ├── styles.css            # 디자인·반응형
 ├── app.js                # 언어 전환 / 예약 채널 자동 배정 / 갤러리 필터 / 릴스 캐러셀
+├── data/
+│   └── content.json      # ★ 원장님이 /admin/ 에서 고치는 문구·메뉴·가격·링크·릴스
+├── admin/
+│   ├── index.html        # 관리자 편집 페이지 (noindex)
+│   ├── admin.css
+│   └── admin.js          # 폼 → GitHub Contents API 커밋 → 라이브 반영 확인
 ├── assets/
 │   ├── *.jpg             # 스튜디오누누 인스타그램 실제 이미지
 │   ├── reel-*.mp4        # 인스타 릴스 원본 영상(720×1280, H.264, 합계 약 6MB)
 │   ├── reel-*.jpg        # 릴스 썸네일(poster)
 │   └── fonts/            # 셀프호스팅 서브셋 웹폰트(Noto Serif/Sans JP·KR)
-└── preview/              # 검증 스크린샷 4장
+└── preview/              # 검증 스크린샷
 ```
+
+## 관리자 페이지 (`/admin/`) — 원장님 전달용
+
+주소: **https://snow196830-stack.github.io/studionunu/admin/**
+
+원장님이 코드 없이 홈페이지 문구를 고치는 페이지입니다. 공개 코드에는 토큰도 비밀번호도 들어 있지 않고,
+원장님 브라우저에만 토큰이 저장됩니다.
+
+### 처음 한 번 — 토큰 발급 3단계
+
+1. https://github.com/settings/personal-access-tokens/new 를 엽니다(원장님 GitHub 로그인 상태).
+2. 아래처럼 설정합니다.
+   - **Token name**: `studionunu-admin`
+   - **Expiration**: `1 year` (또는 원하는 기간)
+   - **Repository access**: `Only select repositories` → `snow196830-stack/studionunu`
+   - **Permissions → Repository permissions → Contents**: `Read and write`
+3. **Generate token** 을 누르고, 한 번만 보이는 `github_pat_…` 값을 복사해 `/admin/` 화면에 붙여넣고 **연결하기**.
+
+이후에는 문구를 고치고 **[저장 및 홈페이지 반영]** 만 누르면 됩니다(약 30~60초 뒤 라이브 반영).
+토큰을 잊었거나 만료되면 위 3단계로 새로 만들면 됩니다.
+
+### 고칠 수 있는 것
+
+| 영역 | 내용 |
+|---|---|
+| 기본 · 공지 | 상단 공지바(PC·모바일 문구 따로), 히어로 제목·소개·배지 |
+| 예약 링크 | LINE / 카카오톡 채널 / 인스타그램 / 카카오맵 주소 |
+| 영업시간 · 주소 · 주차 | 오시는 길 영역 5줄 |
+| 시술 메뉴 & 가격 | 메뉴 추가·삭제·순서, 이름·설명·가격(비우면 가격 줄 숨김), 리턴핑크 블록 |
+| 인스타 릴스 | 제목·설명·릴스 주소·순서 (영상·썸네일은 고급 항목) |
+
+- 언어 탭(한국어 / 日本語 / English)을 바꿔 가며 각 언어 문구를 채웁니다. 비워 둔 언어는 이전 문구가 남습니다.
+- 토큰 없이도 **content.json 내려받기·올리기**로 백업·복원할 수 있습니다.
+- PIN 잠금(선택): 토큰을 PBKDF2 + AES-GCM 으로 암호화해 저장하고, 열 때 PIN을 묻습니다.
+- 새로 넣은 글자가 홈페이지 셀프호스팅 폰트에 없으면 시스템 폰트로 표시됩니다(깨지지 않음).
+  폰트까지 맞추려면 아래 `build-studio-nunu-fonts.py` 를 다시 실행합니다.
+
+## 홈페이지가 문구를 읽는 방식
+
+`index.html` + `app.js` 안의 일본어·한국어·영어 기본 문구는 **폴백**입니다.
+`data/content.json` 이 있으면 그 값이 화면에 적용되고, 없거나 읽지 못하면 기본 문구로 그대로 동작합니다(화면이 깨지지 않음).
+
+- 정적 문구: `index.html` 의 `[data-content="hero.title"]` 같은 요소를 `app.js` 가 덮어씁니다.
+- 시술 메뉴 카드·릴스 캐러셀: `content.json` 의 배열로 다시 그립니다(추가·삭제·순서 반영).
+- 깨짐 방지: 카드·릴스 목록이 비어 있으면 기본 마크업을 유지합니다.
+
 
 ## 실행 / 배포
 
@@ -66,6 +119,9 @@ cd studio-nunu && python3 -m http.server 8000
 
 ### 문구 수정 방법
 
+원장님은 **[관리자 페이지](https://snow196830-stack.github.io/studionunu/admin/)** 에서 고치는 것이 기본입니다.
+개발자가 코드로 고칠 때는:
+
 일본어는 `index.html` 원문이 기준입니다(`data-i18n` 키가 붙은 요소).
 한국어·영어는 `app.js` 상단 `I18N.kr` / `I18N.en` 사전에서 같은 키를 고치면 됩니다.
 **문구를 바꾼 뒤에는 폰트 서브셋을 다시 만들어야** 새 글자가 빠지지 않습니다:
@@ -83,7 +139,9 @@ python3 ../tools/build-studio-nunu-fonts.py
 ## 검증
 
 ```bash
-python3 ../tools/verify-studio-nunu.py
+python3 ../tools/verify-studio-nunu.py     # 로컬 렌더·동작·링크·프리뷰
+git push origin main                        # studio-nunu-deploy → GitHub Pages
+python3 tools/verify-live.py                # 라이브 확인(content.json·/admin/ 포함)
 ```
 
 - 데스크톱 1440×900 / 모바일 390×844 실제 크로미움 렌더
