@@ -9,9 +9,11 @@
 studio-nunu/
 ├── index.html            # 마크업(일본어 원문이 기본값)
 ├── styles.css            # 디자인·반응형
-├── app.js                # 언어 전환 / 예약 채널 자동 배정 / 갤러리 필터
+├── app.js                # 언어 전환 / 예약 채널 자동 배정 / 갤러리 필터 / 릴스 캐러셀
 ├── assets/
-│   ├── *.jpg             # 스튜디오누누 인스타그램 실제 이미지 15장
+│   ├── *.jpg             # 스튜디오누누 인스타그램 실제 이미지
+│   ├── reel-*.mp4        # 인스타 릴스 원본 영상(720×1280, H.264, 합계 약 6MB)
+│   ├── reel-*.jpg        # 릴스 썸네일(poster)
 │   └── fonts/            # 셀프호스팅 서브셋 웹폰트(Noto Serif/Sans JP·KR)
 └── preview/              # 검증 스크린샷 4장
 ```
@@ -31,6 +33,22 @@ cd studio-nunu && python3 -m http.server 8000
 - `index.html`의 `og:image`·`og:url` 은 라이브 배포 주소(`https://snow196830-stack.github.io/studionunu/`) 기준 절대 URL로 설정되어 있습니다.
   도메인을 바꾸면 두 값을 새 주소로 바꿔 주세요.
 - 정식 도메인·파비콘·`sitemap.xml` 은 도메인 확정 후 추가.
+
+## 쇼케이스 릴스 캐러셀 (`#showcase`)
+
+인스타그램 릴스 4편을 자동 슬라이드로 보여 주고, 카드를 누르면 해당 릴스 원문이 새 창으로 열립니다.
+
+| 슬라이드 | 파일 | 원문 |
+|---|---|---|
+| REEL 01 | `reel-df1yagnprsl.*` | https://www.instagram.com/reel/Df1YAgnpRSL/ |
+| REEL 02 | `reel-de5m5qjlwy.*` | https://www.instagram.com/reel/De5m5-qJlwy/ |
+| REEL 03 | `reel-dfovce2pl9t.*` | https://www.instagram.com/reel/DfoVcE2pL9T/ |
+| REEL 04 | `reel-dewginkpbhm.*` | https://www.instagram.com/reel/DewGINkpBhm/ |
+
+- 동작: 5.5초 간격 자동 전환(`data-autoplay="5500"`), 마우스 오버·포커스·스와이프 중 정지, 좌우 버튼·인디케이터·일시정지 버튼 제공, 모바일은 터치 스와이프(스냅).
+- 영상은 `<video autoplay muted loop playsinline poster>` 로 화면에 보이는 슬라이드만 재생합니다(`preload="metadata"`).
+- 릴스를 추가·교체하려면: `assets/`에 `reel-<이름>.mp4`(720×1280, 2MB 이내 권장)와 `.jpg` 포스터를 넣고, `index.html`의 `#reelTrack`에 `<li class="reels__slide">` 하나를 복사해 `src`·`poster`·`href`와 `data-i18n` 키를 바꾼 뒤 `app.js`의 `I18N.kr` / `I18N.en`에 같은 키를 추가합니다. 인디케이터는 슬라이드 수에 맞춰 자동 생성됩니다.
+- 영상은 `yt-dlp https://www.instagram.com/reel/<shortcode>/ -f 3` 로 받습니다(로그인 없이 되는 프로그레시브 mp4 = H.264).
 
 ## 언어 전환 규칙
 

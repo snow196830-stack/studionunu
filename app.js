@@ -101,6 +101,25 @@
       reel1: "콤보 브로우 · 결과",
       reel2: "립 · 결과",
       reel3: "아이라인 · 시술 과정",
+      reel1t: "1:1 프라이빗 살롱",
+      reel1d: "대표 NUNU가 모든 시술을 1:1로 직접 담당합니다.",
+      reel2t: "오버립 · 코랄 오렌지",
+      reel2d: "오버립과 코랄 컬러로 부드러운 입술을 완성했습니다.",
+      reel3t: "콤보 브로우 · 결과",
+      reel3d: "상담부터 시술까지 대표원장이 직접 담당합니다.",
+      reel4t: "브라운 아이라인 · 시술 과정",
+      reel4d: "부드럽고 고급스러운 브라운 컬러로 눈매를 정돈합니다.",
+      reelCta: "릴스 보기",
+      reelGroup: "인스타그램 릴스",
+      reelPrev: "이전 릴스",
+      reelNext: "다음 릴스",
+      reelPause: "자동 넘김 멈춤",
+      reelPlay: "자동 넘김 다시 시작",
+      reelDotsLabel: "릴스 선택",
+      reel1a: "1:1 프라이빗 살롱 릴스를 인스타그램에서 보기",
+      reel2a: "오버립 릴스를 인스타그램에서 보기",
+      reel3a: "콤보 브로우 릴스를 인스타그램에서 보기",
+      reel4a: "브라운 아이라인 릴스를 인스타그램에서 보기",
       showMore: "인스타그램에서 다른 영상 보기",
       galTitle: "비포&애프터",
       galLead: "게시된 사진은 모두 STUDIO NUNU 인스타그램에 올라온 것입니다. 개인차가 있으며 모든 분께 같은 결과를 보장하지는 않습니다.",
@@ -220,6 +239,25 @@
       reel1: "Combo brow · result",
       reel2: "Lip · result",
       reel3: "Eye-line · treatment",
+      reel1t: "The private 1:1 atelier",
+      reel1d: "Lead artist NUNU treats every guest personally, from first consultation to finish.",
+      reel2t: "Over-lip · coral orange",
+      reel2d: "An over-lip finished in a soft coral orange.",
+      reel3t: "Combo brow · result",
+      reel3d: "From consultation to treatment, the lead artist works on you personally.",
+      reel4t: "Brown eye-line · in treatment",
+      reel4d: "A soft, elegant brown that defines the eyes.",
+      reelCta: "Watch the reel",
+      reelGroup: "Instagram reels",
+      reelPrev: "Previous reel",
+      reelNext: "Next reel",
+      reelPause: "Pause autoplay",
+      reelPlay: "Resume autoplay",
+      reelDotsLabel: "Choose a reel",
+      reel1a: "Watch the private 1:1 atelier reel on Instagram",
+      reel2a: "Watch the over-lip reel on Instagram",
+      reel3a: "Watch the combo brow reel on Instagram",
+      reel4a: "Watch the brown eye-line reel on Instagram",
       showMore: "More videos on Instagram",
       galTitle: "Before & After",
       galLead: "Every photo here is from STUDIO NUNU’s own Instagram. Results vary from person to person and are not a guarantee of the same outcome.",
@@ -283,12 +321,15 @@
   /* ---------- 3. 원문(일본어) 캡처 ---------- */
   var nodes = Array.prototype.slice.call(document.querySelectorAll("[data-i18n]"));
   var altNodes = Array.prototype.slice.call(document.querySelectorAll("[data-i18n-alt]"));
+  var ariaNodes = Array.prototype.slice.call(document.querySelectorAll("[data-i18n-aria]"));
   var htmlMemo = new Map();
   var altMemo = new Map();
+  var ariaMemo = new Map();
+  var langHooks = [];
 
   nodes.forEach(function (el) { htmlMemo.set(el, el.innerHTML); });
   altNodes.forEach(function (el) { altMemo.set(el, el.getAttribute("alt") || ""); });
-
+  ariaNodes.forEach(function (el) { ariaMemo.set(el, el.getAttribute("aria-label") || ""); });
   var LANG_KEY = "nunu-lang";
   var current = "jp";
 
@@ -315,6 +356,14 @@
       var val = textFor(lang, key);
       el.setAttribute("alt", val === null ? altMemo.get(el) : val);
     });
+
+    /* aria-label */
+    ariaNodes.forEach(function (el) {
+      var key = el.getAttribute("data-i18n-aria");
+      var val = textFor(lang, key);
+      el.setAttribute("aria-label", val === null ? (ariaMemo.get(el) || "") : val);
+    });
+    langHooks.forEach(function (fn) { try { fn(); } catch (e) {} });
 
     /* 문서 정보 */
     var meta = META[lang] || META.jp;
@@ -442,6 +491,218 @@
     revealables.forEach(function (el) { el.classList.add("is-in"); });
   }
 
+  /* ---------- 7. 릴스 캐러셀 (자동 슬라이드) ---------- */
+  function initReels() {
+    var root = document.getElementById("reels");
+    if (!root) return;
+    var viewport = document.getElementById("reelViewport");
+    var track = document.getElementById("reelTrack");
+    if (!viewport || !track || !track.children.length) return;
+
+    var slides = Array.prototype.slice.call(track.children);
+    var videos = Array.prototype.slice.call(track.querySelectorAll("video"));
+    var prevBtn = document.getElementById("reelPrev");
+    var nextBtn = document.getElementById("reelNext");
+    var toggleBtn = document.getElementById("reelToggle");
+    var dotsWrap = document.getElementById("reelDots");
+    var reduce = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
+    var interval = parseInt(root.getAttribute("data-autoplay"), 10) || 5500;
+
+    var index = 0;
+    var maxIndex = Math.max(0, slides.length - 1);
+    var userPaused = !!(reduce && reduce.matches);
+    var hovering = false;
+    var inView = false;
+    var holdTimer = null;
+    var timer = null;
+    var frame = null;
+
+    /* 인디케이터 */
+    var dots = slides.map(function (s, i) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "reels__dot";
+      b.setAttribute("aria-label", i + 1 + " / " + slides.length);
+      b.setAttribute("aria-current", i === 0 ? "true" : "false");
+      b.addEventListener("click", function () {
+        goTo(i);
+        restart();
+      });
+      dotsWrap.appendChild(b);
+      return b;
+    });
+
+    function step() {
+      if (slides.length < 2) return 0;
+      return slides[1].offsetLeft - slides[0].offsetLeft;
+    }
+
+    function positions() {
+      var s = step();
+      if (!s) return;
+      var per = Math.max(1, Math.round(viewport.clientWidth / s));
+      maxIndex = Math.max(0, slides.length - per);
+    }
+
+    function goTo(i, instant) {
+      if (!maxIndex) maxIndex = slides.length - 1;
+      index = Math.max(0, Math.min(maxIndex, i));
+      var left = slides[index].offsetLeft - slides[0].offsetLeft;
+      var smooth = !instant && !(reduce && reduce.matches);
+      try {
+        viewport.scrollTo({ left: left, behavior: smooth ? "smooth" : "auto" });
+      } catch (e) {
+        viewport.scrollLeft = left;
+      }
+      paint();
+    }
+
+    function paint() {
+      dots.forEach(function (d, i) {
+        d.setAttribute("aria-current", i === index ? "true" : "false");
+      });
+    }
+
+    /* 지금 보이는 슬라이드만 재생 */
+    function isVisible(slide) {
+      var start = slide.offsetLeft - slides[0].offsetLeft;
+      var left = viewport.scrollLeft;
+      var right = left + viewport.clientWidth;
+      return start + slide.offsetWidth > left + 36 && start < right - 36;
+    }
+
+    function safePlay(v) {
+      if (!v.paused) return;
+      var p = v.play();
+      if (p && p.catch) p.catch(function () {});
+    }
+
+    function playVisible() {
+      var run = inView && !userPaused && !document.hidden;
+      videos.forEach(function (v) {
+        var slide = v.closest ? v.closest(".reels__slide") : null;
+        if (run && slide && isVisible(slide)) safePlay(v);
+        else if (!v.paused) v.pause();
+      });
+    }
+
+    function tick() {
+      if (userPaused || hovering || !inView || document.hidden) return;
+      goTo(index + 1 > maxIndex ? 0 : index + 1);
+    }
+
+    function restart() {
+      if (timer) clearInterval(timer);
+      timer = setInterval(tick, interval);
+    }
+
+    function setToggle() {
+      if (!toggleBtn) return;
+      toggleBtn.setAttribute("aria-pressed", userPaused ? "true" : "false");
+      var key = userPaused ? "reelPlay" : "reelPause";
+      var dict = I18N[current];
+      var jp = toggleBtn.getAttribute(userPaused ? "data-jp-play" : "data-jp-pause") || "";
+      var label = current !== "jp" && dict && dict[key] ? dict[key] : jp;
+      if (label) toggleBtn.setAttribute("aria-label", label);
+    }
+
+    /* --- 이벤트 --- */
+    if (prevBtn) prevBtn.addEventListener("click", function () { goTo(index - 1 < 0 ? maxIndex : index - 1); restart(); });
+    if (nextBtn) nextBtn.addEventListener("click", function () { goTo(index + 1 > maxIndex ? 0 : index + 1); restart(); });
+    if (toggleBtn) toggleBtn.addEventListener("click", function () {
+      userPaused = !userPaused;
+      setToggle();
+      playVisible();
+      restart();
+    });
+
+    function hoverOn() { hovering = true; }
+    function hoverOff() { hovering = false; }
+    root.addEventListener("pointerenter", hoverOn);
+    root.addEventListener("pointerleave", hoverOff);
+    root.addEventListener("focusin", hoverOn);
+    root.addEventListener("focusout", function (e) {
+      if (!root.contains(e.relatedTarget)) hoverOff();
+    });
+
+    /* 터치: 스와이프 중에는 멈추고, 손을 뗀 뒤 잠시 뒤 재개 */
+    function holdOn() {
+      hovering = true;
+      if (holdTimer) clearTimeout(holdTimer);
+    }
+    function holdOff() {
+      if (holdTimer) clearTimeout(holdTimer);
+      holdTimer = setTimeout(hoverOff, 6000);
+    }
+    root.addEventListener("touchstart", holdOn, { passive: true });
+    root.addEventListener("touchend", holdOff, { passive: true });
+
+    /* 스크롤 위치 → 인덱스 · 재생 */
+    function onScroll() {
+      if (frame) return;
+      frame = requestAnimationFrame(function () {
+        frame = null;
+        var s = step();
+        if (s) {
+          var i = Math.round(viewport.scrollLeft / s);
+          index = Math.max(0, Math.min(maxIndex, i));
+          paint();
+        }
+        playVisible();
+      });
+    }
+    viewport.addEventListener("scroll", onScroll, { passive: true });
+
+    viewport.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowLeft") { e.preventDefault(); goTo(index - 1 < 0 ? maxIndex : index - 1); restart(); }
+      else if (e.key === "ArrowRight") { e.preventDefault(); goTo(index + 1 > maxIndex ? 0 : index + 1); restart(); }
+    });
+
+    document.addEventListener("visibilitychange", playVisible);
+
+    if ("IntersectionObserver" in window) {
+      var secObs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) {
+          inView = en.isIntersecting;
+          playVisible();
+        });
+      }, { threshold: 0.12 });
+      secObs.observe(root);
+    } else {
+      inView = true;
+    }
+
+    var resizeTimer = null;
+    window.addEventListener("resize", function () {
+      if (resizeTimer) clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function () {
+        positions();
+        goTo(index, true);
+        playVisible();
+      }, 180);
+    });
+
+    if (reduce && reduce.addEventListener) {
+      reduce.addEventListener("change", function (e) {
+        userPaused = e.matches;
+        setToggle();
+        playVisible();
+      });
+    }
+
+    langHooks.push(setToggle);
+
+    /* --- 시작 --- */
+    positions();
+    paint();
+    setToggle();
+    restart();
+    videos.forEach(function (v) { v.muted = true; });
+    playVisible();
+    setTimeout(playVisible, 600);
+  }
+
   /* ---------- 8. 시작 ---------- */
   applyLanguage(initialLang());
+  initReels();
 })();
