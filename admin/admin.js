@@ -32,7 +32,8 @@
     token: null,
     sha: null,
     dirty: false,
-    saving: false
+    saving: false,
+    loadFailed: false
   };
 
   /* ---------- 작은 도구 ---------- */
@@ -656,6 +657,10 @@
     ev.preventDefault();
     var token = $("tokenInput").value.trim();
     if (!token) { setGateAlert("토큰을 붙여넣어 주세요."); return; }
+    if (!state.content || state.loadFailed) {
+      setGateAlert("content.json 을 먼저 불러와야 합니다. 페이지를 새로고침한 뒤 다시 시도해 주세요.", "warn");
+      return;
+    }
     setGateAlert("토큰을 확인하는 중…", "warn");
     var btn = $("gateSubmit");
     btn.disabled = true;
@@ -992,9 +997,11 @@
       state.content = await loadContent();
       state.pristine = clone(state.content);
     } catch (e) {
+      state.loadFailed = true;
       document.body.insertAdjacentHTML("afterbegin",
         '<div class="alert" style="margin:16px">' + e.message + "</div>");
       showGate();
+      $("gateSkip").hidden = true;
       return;
     }
     renderAll();
